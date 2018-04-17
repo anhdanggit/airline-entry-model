@@ -134,7 +134,7 @@ move.rule = "AL"
 Berry.AL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
 move.rule = "DL"
 Berry.DL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
-
+# NOTICE: The delta in the par is (-delta)
 
 # Standard Errors
 Berry.profit.se = sqrt(abs(diag(solve(Berry.profit.res$hess))))
