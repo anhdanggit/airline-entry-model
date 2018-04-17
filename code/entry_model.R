@@ -128,14 +128,15 @@ Berry.Obj <- function(theta)
 
 
 # DL moves first
+theta.start = rep(0, k.par+1)
 move.rule = "profit"
 Berry.profit.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
 move.rule = "AL"
 Berry.AL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
 move.rule = "DL"
 Berry.DL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
-# NOTICE: The delta in the par is (-delta)
 
+# NOTICE: The delta in the par is (-delta)
 # Standard Errors
 Berry.profit.se = sqrt(abs(diag(solve(Berry.profit.res$hess))))
 Berry.AL.se = sqrt(abs(diag(solve(Berry.AL.res$hess))))
