@@ -21,8 +21,7 @@
 dat <-read.csv("./data/markets_final.csv",header=T)
 
 #--------------------------------------------#
-# Model 1: Simple Number of Firms Model ####
-# Bresnahan and Reiss 
+# Model: Simulated MLE ####
 #--------------------------------------------#
 
 nfirm = dat$firm_nb
@@ -30,6 +29,7 @@ nfirm = dat$firm_nb
 # Covariates for 6 firms
 nmkts = nrow(dat); # Number of markets
 ints = rep(1,nmkts);  # intercepts
+nfirm = 6
 
 # transform
 dat$airpresence = log(dat$airpresence)
@@ -37,13 +37,21 @@ dat$population = log(dat$population)
 dat$distance = log(dat$distance)
 dat$distancesq = log(dat$distancesq)
 
+# no heterogeneity matrix
+AAmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
+DLmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
+UAmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
+ALmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
+WNmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
+LCCmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
 
-AAmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlineaa)
-DLmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlinedl)
-UAmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlineua)
-ALmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlineal)
-WNmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlinewn)
-LCCmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlinelcc)
+# heterogeneity matrix
+AAmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlineaa)
+DLmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlinedl)
+UAmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlineua)
+ALmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlineal)
+WNmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlinewn)
+LCCmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlinelcc)
 
 # number of parameters:
 k.par = ncol(AAmat)
@@ -51,8 +59,16 @@ k.par = ncol(AAmat)
 
 # simulate for epsilon_{i,m,nreps}
 set.seed(1234)
-nreps = 100 # Number of Simulations
+nreps = 1 # Number of Simulations
 u.mo = matrix(rnorm(nreps*nmkts),nmkts,nreps) # characteristics of the market
+
+# market x firms, u.mk
+u.aa = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+u.dl = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+u.ua = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+u.al = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+u.wn = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+u.lcc = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
 
 
 # Create Dependent Vectors
@@ -70,20 +86,56 @@ Berry.Obj <- function(theta)
   # move.rule = { DL first, AL first, most profitable first }
   
   # set parameters
+  if (model == "no heter"){
+    k.par = ncol(AAmat)
+  } else {
+    k.par = ncol(AAmat.heter)
+  }
   
   beta = theta[1:k.par];
   delta = exp(theta[k.par+1]); # We exponentiate to ensure competitive effects are negative
-  #rho = theta[10]
+  if (model == "simulated"){
+    rho = theta[k.par+2]
+  }
+  
   
   # Deterministic component of profits (param from 1 to 7)
   
-  pi.AA = AAmat%*%beta;
-  pi.DL = DLmat%*%beta;
-  pi.UA = UAmat%*%beta;
-  pi.AL = ALmat%*%beta;
-  pi.WN = WNmat%*%beta;
-  pi.LCC = LCCmat%*%beta;
+  if (model == "no heter"){
+    pi.AA = AAmat%*%beta + u.mo;
+    pi.DL = DLmat%*%beta + u.mo;
+    pi.UA = UAmat%*%beta + u.mo;
+    pi.AL = ALmat%*%beta + u.mo;
+    pi.WN = WNmat%*%beta + u.mo;
+    pi.LCC = LCCmat%*%beta + u.mo;
+  }
   
+  if (model == "heter"){
+    pi.AA = AAmat.heter%*%beta + u.mo;
+    pi.DL = DLmat.heter%*%beta + u.mo;
+    pi.UA = UAmat.heter%*%beta + u.mo;
+    pi.AL = ALmat.heter%*%beta + u.mo;
+    pi.WN = WNmat.heter%*%beta + u.mo;
+    pi.LCC = LCCmat.heter%*%beta + u.mo;
+  }
+  
+  if (model == "no cor"){
+    pi.AA = AAmat.heter%*%beta + u.aa;
+    pi.DL = DLmat.heter%*%beta + u.dl;
+    pi.UA = UAmat.heter%*%beta + u.ua;
+    pi.AL = ALmat.heter%*%beta + u.al;
+    pi.WN = WNmat.heter%*%beta + u.wn;
+    pi.LCC = LCCmat.heter%*%beta + u.lcc;
+  }
+  
+  if (model == "simulated"){
+    pi.AA = AAmat.heter%*%beta + u.aa*sqrt(1-rho) + u.mo*rho;
+    pi.DL = DLmat.heter%*%beta + u.dl*sqrt(1-rho) + u.mo*rho;
+    pi.UA = UAmat.heter%*%beta + u.ua*sqrt(1-rho) + u.mo*rho;
+    pi.AL = ALmat.heter%*%beta + u.al*sqrt(1-rho) + u.mo*rho;
+    pi.WN = WNmat.heter%*%beta + u.wn*sqrt(1-rho) + u.mo*rho;
+    pi.LCC = LCCmat.heter%*%beta + u.lcc*sqrt(1-rho) + u.mo*rho;
+  }
   
   # We use analytical probabilities 
   # Entry under assumption that DL moves first
@@ -128,11 +180,35 @@ Berry.Obj <- function(theta)
 
 
 # DL moves first
-theta.start = rep(0, k.par+1)
+model = "simulated" # "no heter", "heter", "no cor"
+
+if (model == "no heter"){
+  k.start = ncol(AAmat)
+} else if (model == "simulated") {
+  k.start = ncol(AAmat.heter) + 1 # add the rho
+} else {
+  k.start = ncol(AAmat.heter)
+}
+
+theta.start = rep(0, k.start+1) # set the starting value
+
 move.rule = "profit"
 Berry.profit.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
+
+# Notice: the results in other
+#----------------------------
+# constant
+# pop
+# dis
+# dissq
+# route
+# city2
+# delta (need to take ln of positive)
+# delta
+
 move.rule = "AL"
 Berry.AL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
+
 move.rule = "DL"
 Berry.DL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
 
@@ -141,3 +217,5 @@ Berry.DL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),met
 Berry.profit.se = sqrt(abs(diag(solve(Berry.profit.res$hess))))
 Berry.AL.se = sqrt(abs(diag(solve(Berry.AL.res$hess))))
 Berry.DL.se = sqrt(abs(diag(solve(Berry.DL.res$hess))))
+
+
