@@ -38,12 +38,12 @@ dat$distance = log(dat$distance)
 dat$distancesq = log(dat$distancesq)
 
 # no heterogeneity matrix
-AAmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
-DLmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
-UAmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
-ALmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
-WNmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
-LCCmat = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route)
+AAmat = cbind(ints, dat$population, dat$distance, dat$distancesq)
+DLmat = cbind(ints, dat$population, dat$distance, dat$distancesq)
+UAmat = cbind(ints, dat$population, dat$distance, dat$distancesq)
+ALmat = cbind(ints, dat$population, dat$distance, dat$distancesq)
+WNmat = cbind(ints, dat$population, dat$distance, dat$distancesq)
+LCCmat = cbind(ints, dat$population, dat$distance, dat$distancesq)
 
 # heterogeneity matrix
 AAmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$route, dat$airlineaa)
@@ -57,33 +57,32 @@ LCCmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$rou
 k.par = ncol(AAmat)
 
 
-# simulate for epsilon_{i,m,nreps}
-set.seed(1234)
-nreps = 1 # Number of Simulations
-u.mo = matrix(rnorm(nreps*nmkts),nmkts,nreps) # characteristics of the market
-
-# market x firms, u.mk
-u.aa = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-u.dl = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-u.ua = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-u.al = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-u.wn = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-u.lcc = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-
-
 # Create Dependent Vectors
-nofirm = (1-dat$airlineaa)*(1-dat$airlinedl)*(1-dat$airlineal)*(1-dat$airlineua)*(1-dat$airlineal)*(1-dat$airlinelcc)
-monoDL = (1-dat$airlineaa)*dat$airlinedl*(1-dat$airlineal)*(1-dat$airlineua)*(1-dat$airlineal)*(1-dat$airlinelcc)
-monoAL = (1-dat$airlineaa)*(1-dat$airlinedl)*dat$airlineal*(1-dat$airlineua)*(1-dat$airlineal)*(1-dat$airlinelcc)
-mono = monoDL + monoAL
-duo = 1 - nofirm - monoDL - monoAL
+nofirm = rep(0, length(dat$market))
+nofirm[dat$firm_nb==0]=1
+
+mono = rep(0, length(dat$market))
+mono[dat$firm_ng==1]=1
+
+duo = rep(0, length(dat$market))
+duo = 1 - mono - nofirm
 
 
 # Objective function definition
 
 Berry.Obj <- function(theta)
 {
-  # move.rule = { DL first, AL first, most profitable first }
+  # simulate for epsilon_{i,m}
+  nreps = 1 
+  u.mo = matrix(rnorm(nreps*nmkts),nmkts,nreps) # characteristics of the market
+  
+  # market x firms, u.ik
+  u.aa = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+  u.dl = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+  u.ua = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+  u.al = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+  u.wn = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+  u.lcc = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
   
   # set parameters
   if (model == "no heter"){
@@ -102,30 +101,31 @@ Berry.Obj <- function(theta)
   # Deterministic component of profits (param from 1 to 7)
   
   if (model == "no heter"){
-    pi.AA = AAmat%*%beta + u.mo;
-    pi.DL = DLmat%*%beta + u.mo;
-    pi.UA = UAmat%*%beta + u.mo;
-    pi.AL = ALmat%*%beta + u.mo;
-    pi.WN = WNmat%*%beta + u.mo;
-    pi.LCC = LCCmat%*%beta + u.mo;
+    pi.AA = AAmat%*%beta;
+    pi.DL = DLmat%*%beta;
+    pi.UA = UAmat%*%beta;
+    pi.AL = ALmat%*%beta;
+    pi.WN = WNmat%*%beta;
+    pi.LCC = LCCmat%*%beta;
   }
   
   if (model == "heter"){
-    pi.AA = AAmat.heter%*%beta + u.mo;
-    pi.DL = DLmat.heter%*%beta + u.mo;
-    pi.UA = UAmat.heter%*%beta + u.mo;
-    pi.AL = ALmat.heter%*%beta + u.mo;
-    pi.WN = WNmat.heter%*%beta + u.mo;
-    pi.LCC = LCCmat.heter%*%beta + u.mo;
+    pi.AA = AAmat.heter%*%beta;
+    pi.DL = DLmat.heter%*%beta;
+    pi.UA = UAmat.heter%*%beta;
+    pi.AL = ALmat.heter%*%beta;
+    pi.WN = WNmat.heter%*%beta;
+    pi.LCC = LCCmat.heter%*%beta;
   }
   
   if (model == "no cor"){
-    pi.AA = AAmat.heter%*%beta + u.aa;
-    pi.DL = DLmat.heter%*%beta + u.dl;
-    pi.UA = UAmat.heter%*%beta + u.ua;
-    pi.AL = ALmat.heter%*%beta + u.al;
-    pi.WN = WNmat.heter%*%beta + u.wn;
-    pi.LCC = LCCmat.heter%*%beta + u.lcc;
+    u.aa = rnorm
+    pi.AA = AAmat.heter%*%beta + rnorm(1); # u_ik = u_i0 + u_mo
+    pi.DL = DLmat.heter%*%beta + rnorm(1);
+    pi.UA = UAmat.heter%*%beta + rnorm(1);
+    pi.AL = ALmat.heter%*%beta + rnorm(1);
+    pi.WN = WNmat.heter%*%beta + rnorm(1);
+    pi.LCC = LCCmat.heter%*%beta + rnorm(1);
   }
   
   if (model == "simulated"){
@@ -138,23 +138,27 @@ Berry.Obj <- function(theta)
   }
   
   # We use analytical probabilities 
-  # Entry under assumption that DL moves first
-  if(move.rule == "DL") {	
-    # no firm enter
+  # Entry under assumption that more market presence moves first
+  if(move.rule == "market") {  
     p0.an = pnorm(-pi.AA)*pnorm(-pi.DL)*pnorm(-pi.UA)*pnorm(-pi.AL)*pnorm(-pi.WN)*pnorm(-pi.LCC)
-    p1.an = pnorm(-pi.AA+delta)*pnorm(pi.DL)*pnorm(-pi.UA+delta)*pnorm(-pi.AL+delta)*pnorm(-pi.WN+delta)*pnorm(-pi.LCC+delta)
-    p2.an = 1- p0.an - p1.an;
-  }
-  # Entry under assumption that AL moves first
-  if(move.rule == "AL") {  
-    p0.an = pnorm(-pi.AA)*pnorm(-pi.DL)*pnorm(-pi.UA)*pnorm(-pi.AL)*pnorm(-pi.WN)*pnorm(-pi.LCC)
-    p1.an = pnorm(-pi.AA+delta)*pnorm(-pi.DL+delta)*pnorm(-pi.UA+delta)*pnorm(pi.AL)*pnorm(-pi.WN+delta)*pnorm(-pi.LCC+delta)
+    p1.an = pnorm(pi.DL)*pnorm(-pi.AL + delta) - (pnorm(-pi.DL+delta) - pnorm(-pi.DL))*(pnorm(-pi.AL+delta) - pnorm(-pi.AL))*(1 - pnorm((pi.AL-pi.DL)/2))
     p2.an = 1- p0.an - p1.an;
   }
   # Entry under assumption that the more profitable firm (between DL and AL) moves first
   if(move.rule == "profit") { 
+    
+    p0.an = rep(0, length(pi.AA))
+    p1.an = rep(0, length(pi.AA))
+    p2.an = rep(0, length(pi.AA))
+    
     p0.an = pnorm(-pi.AA)*pnorm(-pi.DL)*pnorm(-pi.UA)*pnorm(-pi.AL)*pnorm(-pi.WN)*pnorm(-pi.LCC)
-    p1.an = pnorm(pi.DL)*pnorm(-pi.AL + delta) - (pnorm(-pi.DL+delta) - pnorm(-pi.DL))*(pnorm(-pi.AL+delta) - pnorm(-pi.AL))*(1 - pnorm((pi.AL-pi.DL)/2))
+    
+    for (i in 1:length(pi.AA)){
+      # for each market rank the profit
+      list = sort(c(pi.AA[i], pi.DL[i], pi.UA[i], pi.AL[i], pi.WN[i], pi.LCC[i]), decreasing = TRUE)
+    }
+    
+    p1.an = pnorm(list[1])*pnorm(-list[2] + delta)*pnorm(-list[3]+delta)*pnorm(-list[4]+delta)*pnorm(-list[5]+delta)*pnorm(-list[6]+delta)
     p2.an = 1- p0.an - p1.an 
   }	
   
@@ -179,8 +183,11 @@ Berry.Obj <- function(theta)
 }
 
 
-# DL moves first
-model = "simulated" # "no heter", "heter", "no cor"
+#---- Variations of Estimates -----------#
+model = "simulated" # "no heter", "heter", "no cor", "simulated
+move.rule = "profit" # "market", "profit"
+S = 1 # number of simulation
+#----------------------------------------#
 
 if (model == "no heter"){
   k.start = ncol(AAmat)
@@ -192,8 +199,17 @@ if (model == "no heter"){
 
 theta.start = rep(0, k.start+1) # set the starting value
 
-move.rule = "profit"
-Berry.profit.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
+
+theta_hat = matrix(rep(0,S*length(theta.start)), S, length(theta.start))
+theta_se = matrix(rep(0,S*length(theta.start)), S, length(theta.start))
+for (i in 1:S){
+  Berry.profit.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
+  theta_hat[i,] = Berry.profit.res$par
+  theta_se[i,] = sqrt(abs(diag(solve(Berry.profit.res$hess))))
+}
+
+colMeans(theta_hat)
+colMeans(theta_se)
 
 # Notice: the results in other
 #----------------------------
@@ -206,16 +222,8 @@ Berry.profit.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000)
 # delta (need to take ln of positive)
 # delta
 
-move.rule = "AL"
-Berry.AL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
-
-move.rule = "DL"
-Berry.DL.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
 
 # NOTICE: The delta in the par is (-delta)
-# Standard Errors
-Berry.profit.se = sqrt(abs(diag(solve(Berry.profit.res$hess))))
-Berry.AL.se = sqrt(abs(diag(solve(Berry.AL.res$hess))))
-Berry.DL.se = sqrt(abs(diag(solve(Berry.DL.res$hess))))
+
 
 
