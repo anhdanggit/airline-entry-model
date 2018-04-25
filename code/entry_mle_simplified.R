@@ -119,12 +119,12 @@ Berry.Obj <- function(theta)
   
   if (model == "no cor"){
     u.aa = rnorm
-    pi.AA = AAmat.heter%*%beta + u.aa; # u_ik = u_i0 + u_mo
-    pi.DL = DLmat.heter%*%beta + u.dl;
-    pi.UA = UAmat.heter%*%beta + u.ua;
-    pi.AL = ALmat.heter%*%beta + u.al;
-    pi.WN = WNmat.heter%*%beta + u.wn;
-    pi.LCC = LCCmat.heter%*%beta + u.lcc;
+    pi.AA = AAmat.heter%*%beta + rnorm(1); # u_ik = u_i0 + u_mo
+    pi.DL = DLmat.heter%*%beta + rnorm(1);
+    pi.UA = UAmat.heter%*%beta + rnorm(1);
+    pi.AL = ALmat.heter%*%beta + rnorm(1);
+    pi.WN = WNmat.heter%*%beta + rnorm(1);
+    pi.LCC = LCCmat.heter%*%beta + rnorm(1);
   }
   
   if (model == "simulated"){
@@ -183,7 +183,7 @@ Berry.Obj <- function(theta)
 
 
 #---- Variations of Estimates -----------#
-model = "simulated" # "no heter", "heter", "no cor", "simulated
+model = "heter" # "no heter", "heter", "no cor", "simulated
 move.rule = "profit" # "market", "profit"
 S = 1 # number of simulation
 #----------------------------------------#
@@ -209,20 +209,3 @@ for (i in 1:S){
 
 colMeans(theta_hat)
 colMeans(theta_se)
-
-# Notice: the results in other
-#----------------------------
-# constant
-# pop
-# dis
-# dissq
-# route
-# city2
-# delta (need to take ln of positive)
-# delta
-
-
-# NOTICE: The delta in the par is (-delta)
-
-
-
