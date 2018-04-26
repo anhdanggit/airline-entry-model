@@ -1,5 +1,5 @@
 #--------------------------------------------#
-# R CODE FOR THE ENTRY MODEL (BERRY, 1992)
+# ENTRY MODEL - MLE (3 Outcomes)
 # Mai-Anh Dang, Hoang Tran, Xiahua Wang
 # M2 EEE - Toulouse School of Economics
 # April, 2018
@@ -7,8 +7,8 @@
 #
 # This file include:
 #
-# Simple Homogeneous Firm Model 
-# Berry (1992) Entry model with 3 identification strategies
+# Berry (1992) Entry model by MLE
+# 3 outcomes: N = 0, N=1, N >=2
 #
 # Data
 # Provided by Prof. Bontemps, with the socioeconomics from Census
@@ -21,7 +21,7 @@
 dat <-read.csv("./data/markets_wide_new.csv",header=T)
 
 #--------------------------------------------#
-# Model: Simulated MLE ####
+# Model: MLE (with 3 outcomes of market)  ####
 #--------------------------------------------#
 
 nfirm = dat$firm_nb
@@ -56,7 +56,7 @@ LCCmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$rou
 k.par = ncol(AAmat)
 
 
-# Create Dependent Vectors
+# Create Dependent Vectors as dummies (3 outcomes, N=0, N=1, N>=2)
 nofirm = rep(0, length(dat$market))
 nofirm[dat$firm_nb==0]=1
 
@@ -68,20 +68,8 @@ duo = 1 - mono - nofirm
 
 
 # Objective function definition
-
 Berry.Obj <- function(theta)
 {
-  # simulate for epsilon_{i,m}
-  nreps = 1 
-  u.mo = matrix(rnorm(nreps*nmkts),nmkts,nreps) # characteristics of the market
-  
-  # market x firms, u.ik
-  u.aa = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-  u.dl = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-  u.ua = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-  u.al = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-  u.wn = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
-  u.lcc = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
   
   # set parameters
   if (model == "no heter"){
@@ -92,14 +80,12 @@ Berry.Obj <- function(theta)
   
   beta = theta[1:k.par];
   delta = exp(theta[k.par+1]); # We exponentiate to ensure competitive effects are negative
-  if (model == "simulated"){
-    rho = theta[k.par+2]
-  }
   
   
   # Deterministic component of profits (param from 1 to 7)
   
   if (model == "no heter"){
+    # Model 1: pi = X*beta + u_{m,0}
     pi.AA = AAmat%*%beta;
     pi.DL = DLmat%*%beta;
     pi.UA = UAmat%*%beta;
@@ -109,6 +95,7 @@ Berry.Obj <- function(theta)
   }
   
   if (model == "heter"){
+    # Model 2: pi = X_{market}*beta + Z_{market, firm}*alpha + u_{m,0}
     pi.AA = AAmat.heter%*%beta;
     pi.DL = DLmat.heter%*%beta;
     pi.UA = UAmat.heter%*%beta;
@@ -118,23 +105,26 @@ Berry.Obj <- function(theta)
   }
   
   if (model == "no cor"){
-    u.aa = rnorm
-    pi.AA = AAmat.heter%*%beta + rnorm(1); # u_ik = u_i0 + u_mo
-    pi.DL = DLmat.heter%*%beta + rnorm(1);
-    pi.UA = UAmat.heter%*%beta + rnorm(1);
-    pi.AL = ALmat.heter%*%beta + rnorm(1);
-    pi.WN = WNmat.heter%*%beta + rnorm(1);
-    pi.LCC = LCCmat.heter%*%beta + rnorm(1);
+    # Model 3: pi = X_{market}*beta + Z_{market, firm}*alpha + u_{m,i}
+    # simulate for epsilon_{i,m}
+    nreps = 100 
+    
+    # market x firms, u.ik
+    u.aa = matrix(rnorm(nreps*nmkts), nmkts, nreps) # randomness for markets, by each firms
+    u.dl = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+    u.ua = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+    u.al = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+    u.wn = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+    u.lcc = matrix(rnorm(nreps*nmkts), nmkts, nreps) 
+    
+    pi.AA = AAmat.heter%*%beta + mean(u.aa); 
+    pi.DL = DLmat.heter%*%beta + mean(u.dl);
+    pi.UA = UAmat.heter%*%beta + mean(u.ua);
+    pi.AL = ALmat.heter%*%beta + mean(u.al);
+    pi.WN = WNmat.heter%*%beta + mean(u.wn);
+    pi.LCC = LCCmat.heter%*%beta + mean(u.lcc);
   }
   
-  if (model == "simulated"){
-    pi.AA = AAmat.heter%*%beta + u.aa*sqrt(1-rho) + u.mo*rho;
-    pi.DL = DLmat.heter%*%beta + u.dl*sqrt(1-rho) + u.mo*rho;
-    pi.UA = UAmat.heter%*%beta + u.ua*sqrt(1-rho) + u.mo*rho;
-    pi.AL = ALmat.heter%*%beta + u.al*sqrt(1-rho) + u.mo*rho;
-    pi.WN = WNmat.heter%*%beta + u.wn*sqrt(1-rho) + u.mo*rho;
-    pi.LCC = LCCmat.heter%*%beta + u.lcc*sqrt(1-rho) + u.mo*rho;
-  }
   
   # We use analytical probabilities 
   # Entry under assumption that more market presence moves first
@@ -155,14 +145,14 @@ Berry.Obj <- function(theta)
     for (i in 1:length(pi.AA)){
       # for each market rank the profit
       list = sort(c(pi.AA[i], pi.DL[i], pi.UA[i], pi.AL[i], pi.WN[i], pi.LCC[i]), decreasing = TRUE)
+      p1.an = pnorm(list[1])*pnorm(-list[1] + delta) - (pnorm(-list[1]+delta) - pnorm(-list[1]))*(pnorm(-list[2]+delta) - pnorm(-list[2]))*(1 - pnorm((list[2]-list[1])/2))
     }
     
-    p1.an = pnorm(list[1])*pnorm(-list[2] + delta)*pnorm(-list[3]+delta)*pnorm(-list[4]+delta)*pnorm(-list[5]+delta)*pnorm(-list[6]+delta)
     p2.an = 1- p0.an - p1.an 
+
   }	
   
   # Construct -LogLikelihood
-  # We use maximum Likelihood to ensure that the comparison to incomplete information  is fair
   # Analytical Probabilities
   p.sim.duo = p2.an
   p.sim.mono = p1.an
@@ -183,9 +173,8 @@ Berry.Obj <- function(theta)
 
 
 #---- Variations of Estimates -----------#
-model = "heter" # "no heter", "heter", "no cor", "simulated
+model = "no cor" # "no heter", "heter", "no cor"
 move.rule = "profit" # "market", "profit"
-S = 1 # number of simulation
 #----------------------------------------#
 
 if (model == "no heter"){
@@ -198,14 +187,10 @@ if (model == "no heter"){
 
 theta.start = rep(0, k.start+1) # set the starting value
 
+Berry.profit.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
+theta_hat = Berry.profit.res$par
+theta_se = sqrt(abs(diag(solve(Berry.profit.res$hess))))
 
-theta_hat = matrix(rep(0,S*length(theta.start)), S, length(theta.start))
-theta_se = matrix(rep(0,S*length(theta.start)), S, length(theta.start))
-for (i in 1:S){
-  Berry.profit.res = optim(theta.start,Berry.Obj,control=list(trace=10,maxit=1000),method="BFGS",hessian=T)
-  theta_hat[i,] = Berry.profit.res$par
-  theta_se[i,] = sqrt(abs(diag(solve(Berry.profit.res$hess))))
-}
 
 colMeans(theta_hat)
 colMeans(theta_se)

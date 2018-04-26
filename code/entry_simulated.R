@@ -1,14 +1,13 @@
 #--------------------------------------------#
-# R CODE FOR THE ENTRY MODEL (BERRY, 1992)
+# THE ENTRY MODEL - SMLE
 # Mai-Anh Dang, Hoang Tran, Xiahua Wang
 # M2 EEE - Toulouse School of Economics
 # April, 2018
 #--------------------------------------------#
 #
 # This file include:
-#
-# Simple Homogeneous Firm Model 
-# Berry (1992) Entry model with 3 identification strategies
+# Entry Model estimated by simulattion method
+# by 6 firms, N = 1,2,3,4,5,6
 #
 # Data
 # Provided by Prof. Bontemps, with the socioeconomics from Census
@@ -56,9 +55,9 @@ LCCmat.heter = cbind(ints, dat$population, dat$distance, dat$distancesq, dat$rou
 k.par = ncol(AAmat)
 
 
-# Create Dependent Vectors (actual number of firm)
+# Create Dependent Vectors (actual number of firm), dummy
 nfirm0 = rep(0, length(dat$market))
-nfirm0[dat$firm_nb==0]=1
+nfirm0[dat$firm_nb==0]=1 # =1 if the actual nfirm = 0
 
 nfirm1 = rep(0, length(dat$market))
 nfirm1[dat$firm_nb==1]=1
@@ -85,7 +84,7 @@ Berry.Obj <- function(theta)
 {
   # simulate for epsilon_{i,m}
   nreps = 1 
-  u.mo = matrix(rnorm(nreps*nmkts),nmkts,nreps) # characteristics of the market
+  u.mo = matrix(rnorm(nreps*nmkts),nmkts,nreps) # randomness by market
   
   # market x firms, u.ik
   u.aa = matrix(rnorm(nreps*nmkts), nmkts, nreps) # marktes in rows and simulation i column
@@ -163,18 +162,7 @@ Berry.Obj <- function(theta)
     N6.an = 1- N0.an - N1.an - N2.an - N3.an - N4.an - N5.an 
   }	
   
-  # Construct -LogLikelihood
-  # Analytical Probabilities
-  N.sim.duo = N2.an
-  N.sim.mono = N1.an
-  N.sim.0 = N0.an
-  
-  # Check for numerical issues
-  N.sim.duo[N.sim.duo<=0] = 1E-10 # to avoid the negative values
-  N.sim.mono[N.sim.mono<=0] = 1E-10
-  N.sim.0[N.sim.0<=0] = 1E-10
-  
-  # Log Likelihood
+  # Log Likelihood by empirical frequency
   llik = sum(log(sum(N0.an == nfirm0)), log(sum(N1.an = nfirm1)), log(sum(N2.an == nfirm2)), log(sum(N3.an = nfirm3)), log(sum(N4.an == nfirm4)), log(sum(N5.an = nfirm5)), log(sum(N6.an = nfirm6)))
   
   # Return Value
@@ -184,8 +172,8 @@ Berry.Obj <- function(theta)
 
 
 #---- Variations of Estimates -----------#
-model = "simulated" # "no heter", "heter", "no cor", "simulated"
-move.rule = "simulated" # "mle", "simulated"
+model = "simulated" # "simulated"
+move.rule = "simulated" # "simulated"
 S = 1 # number of simulation
 #----------------------------------------#
 
@@ -220,12 +208,12 @@ matrixStats::colSds(theta_hat)
 # dis
 # dissq
 # route
+# lairpresence
 # city2
-# delta (need to take ln of positive)
-# delta
+# delta 
+# rho
 
 
-# NOTICE: The delta in the par is (-delta)
 
 
 
