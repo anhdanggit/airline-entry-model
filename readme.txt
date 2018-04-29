@@ -20,6 +20,14 @@ Column (4), Table 2 of the report
 predict the number of entering firms
 Table 3 of the report
 
+4. [ols_probit_regression.do]
+estimate the OLS and Probit model
+Table 2 & 3 of the report
+
+5. [ols_probit_prediction.do]
+predict the number of entering firms
+Table 5 of the report
+
 
 Data files:
 -------------------------
