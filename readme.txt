@@ -40,5 +40,5 @@ The final data used for the estimating the OLS, in the wide format
 2. [markets_long_new.csv]
 The final data used for the estimating the Probit, in the long format
 
-3. [CSV data files in raw_data folder]
-The DB1B market dataset in 2001 Q1-Q4.
+3. [566275675_T_DB1B_MARKET.csv]
+CSV data files in raw_data folder includes the DB1B market dataset from 2001 Q1 to Q4. (Note the names are the same for four quarters, so rename the files manually before processing the raw data)
