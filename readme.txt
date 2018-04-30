@@ -28,6 +28,9 @@ Table 2 & 3 of the report
 predict the number of entering firms
 Table 5 of the report
 
+6.[airpresence_route_firm.do] and [firm_city_operate.do]
+files to clean data from the orginal files
+
 
 Data files:
 -------------------------
